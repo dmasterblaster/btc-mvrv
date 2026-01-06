@@ -18,10 +18,32 @@
       width:100vw;
       height:100vh;
     }
+
+    /* Toggle button */
+    #scaleToggle{
+      position:fixed;
+      top:12px;
+      right:12px;
+      z-index:10;
+      padding:8px 12px;
+      font-size:13px;
+      font-weight:600;
+      background:#ffffff;
+      color:#111;
+      border:1px solid rgba(0,0,0,0.2);
+      border-radius:6px;
+      cursor:pointer;
+      box-shadow:0 1px 3px rgba(0,0,0,0.08);
+    }
+    #scaleToggle:hover{
+      background:#f6f6f6;
+    }
   </style>
 </head>
 <body>
-  <div id="chart"></div>
+
+<button id="scaleToggle">Log scale</button>
+<div id="chart"></div>
 
 <script>
 function toNum(x){
@@ -36,6 +58,8 @@ function pick(obj, keys){
   return undefined;
 }
 
+let isLogScale = false;
+
 async function loadChart(){
   try{
     const res = await fetch("data/mvrv.json", { cache: "no-store" });
@@ -44,9 +68,6 @@ async function loadChart(){
     const rows = await res.json();
     if (!Array.isArray(rows) || rows.length === 0) throw new Error("JSON is empty or not an array.");
 
-    const sample = rows[0] || {};
-    const keys = Object.keys(sample);
-
     const dateKeys  = ["date", "Date"];
     const mvrvKeys  = ["mvrv", "MVRV", "value"];
     const priceKeys = ["price", "Price", "btc_price", "btcPrice", "price_usd", "usd_price"];
@@ -54,7 +75,6 @@ async function loadChart(){
     const dates = [];
     const mvrv  = [];
     const price = [];
-
     let priceCount = 0;
 
     for (const r of rows){
@@ -67,15 +87,7 @@ async function loadChart(){
       dates.push(String(d));
       mvrv.push(m);
       price.push(p);
-
       if (p !== null) priceCount++;
-    }
-
-    if (dates.length === 0){
-      throw new Error(
-        "No valid datapoints after parsing.\n" +
-        "First row keys: " + keys.join(", ")
-      );
     }
 
     const traces = [
@@ -104,7 +116,6 @@ async function loadChart(){
       });
     }
 
-    // Trailing 3 years
     const lastDate = new Date(dates[dates.length - 1]);
     const startDate = new Date(lastDate);
     startDate.setFullYear(startDate.getFullYear() - 3);
@@ -113,97 +124,27 @@ async function loadChart(){
       xaxis: {
         title: "Date",
         type: "date",
-        showgrid: false,
-        tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" },
         range: [
           startDate.toISOString().slice(0,10),
           lastDate.toISOString().slice(0,10)
-        ]
+        ],
+        showgrid: false
       },
-
       yaxis: {
         title: "MVRV (Price / Realized Price)",
-        showgrid: true,
-        gridcolor: "#eeeeee",
-        tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" },
-        range: [0, 10]
+        range: [0, 10],
+        gridcolor: "#eeeeee"
       },
-
       yaxis2: {
         title: "BTC Price (USD)",
         overlaying: "y",
         side: "right",
-        /* LOG REMOVED → LINEAR SCALE */
         tickprefix: "$",
-        tickformat: ",",
-        showgrid: false,
-        tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" }
+        tickformat: ","
       },
-
-      shapes: [
-        {
-          type: "rect",
-          xref: "paper",
-          x0: 0, x1: 1,
-          yref: "y",
-          y0: 0.5, y1: 1.0,
-          fillcolor: "rgba(46, 204, 113, 0.12)",
-          line: { width: 0 },
-          layer: "below"
-        },
-        {
-          type: "rect",
-          xref: "paper",
-          x0: 0, x1: 1,
-          yref: "y",
-          y0: 4.0, y1: 6.0,
-          fillcolor: "rgba(231, 76, 60, 0.12)",
-          line: { width: 0 },
-          layer: "below"
-        }
-      ],
-
-      images: [
-        {
-          source: "assets/tbl-logo.png",
-          xref: "paper",
-          yref: "paper",
-          x: 0.5,
-          y: 0.5,
-          sizex: 0.6,
-          sizey: 0.6,
-          xanchor: "center",
-          yanchor: "middle",
-          opacity: 0.06,
-          layer: "below"
-        }
-      ],
-
-      annotations: [
-        {
-          xref: "paper",
-          yref: "paper",
-          x: 0.04,
-          y: 0.94,
-          xanchor: "left",
-          yanchor: "top",
-          text: "Charts by: @TheBitcoinLayer",
-          showarrow: false,
-          font: { size: 14, color: "#111" },
-          bgcolor: "rgba(255,255,255,0.7)",
-          bordercolor: "rgba(0,0,0,0.15)",
-          borderwidth: 1,
-          borderpad: 6
-        }
-      ],
-
       plot_bgcolor: "#ffffff",
       paper_bgcolor: "#ffffff",
-      margin: { l: 80, r: 90, t: 30, b: 60 },
-      legend: { orientation: "h", x: 0.02, y: 1.05 }
+      margin: { l: 80, r: 90, t: 30, b: 60 }
     };
 
     Plotly.newPlot("chart", traces, layout, {
@@ -211,10 +152,21 @@ async function loadChart(){
       displaylogo: false
     });
 
+    document.getElementById("scaleToggle").onclick = () => {
+      isLogScale = !isLogScale;
+
+      Plotly.relayout("chart", {
+        "yaxis2.type": isLogScale ? "log" : "linear"
+      });
+
+      document.getElementById("scaleToggle").innerText =
+        isLogScale ? "Linear scale" : "Log scale";
+    };
+
   } catch (err){
     console.error(err);
     document.getElementById("chart").innerHTML =
-      "<p style='color:#cf222e;padding:20px;'>Error loading chart data. Open DevTools Console for details.</p>";
+      "<p style='color:#cf222e;padding:20px;'>Error loading chart data.</p>";
   }
 }
 
