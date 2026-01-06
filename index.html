@@ -116,7 +116,10 @@ async function loadChart(){
         showgrid: false,
         tickfont: { color: "#111111" },
         titlefont: { color: "#111111" },
-        range: [startDate.toISOString().slice(0,10), lastDate.toISOString().slice(0,10)]
+        range: [
+          startDate.toISOString().slice(0,10),
+          lastDate.toISOString().slice(0,10)
+        ]
       },
 
       yaxis: {
@@ -132,7 +135,7 @@ async function loadChart(){
         title: "BTC Price (USD)",
         overlaying: "y",
         side: "right",
-        type: "log",
+        /* LOG REMOVED → LINEAR SCALE */
         tickprefix: "$",
         tickformat: ",",
         showgrid: false,
@@ -163,7 +166,6 @@ async function loadChart(){
         }
       ],
 
-      /* 🔹 CENTER WATERMARK */
       images: [
         {
           source: "assets/tbl-logo.png",
@@ -180,7 +182,6 @@ async function loadChart(){
         }
       ],
 
-      /* 🔹 BRAND LABEL */
       annotations: [
         {
           xref: "paper",
