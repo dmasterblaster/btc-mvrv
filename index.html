@@ -47,25 +47,20 @@ async function loadChart(){
     const sample = rows[0] || {};
     const keys = Object.keys(sample);
 
-    // Expecting something like:
-    // [{ "date": "YYYY-MM-DD", "mvrv": 1.23, "price": 42000 }, ...]
-    const dateKeys = ["date", "Date"];
-    const mvrvKeys = ["mvrv", "MVRV", "value"];
+    const dateKeys  = ["date", "Date"];
+    const mvrvKeys  = ["mvrv", "MVRV", "value"];
     const priceKeys = ["price", "Price", "btc_price", "btcPrice", "price_usd", "usd_price"];
 
     const dates = [];
-    const mvrv = [];
+    const mvrv  = [];
     const price = [];
 
     let priceCount = 0;
 
     for (const r of rows){
       const d = pick(r, dateKeys);
-      const mRaw = pick(r, mvrvKeys);
-      const pRaw = pick(r, priceKeys);
-
-      const m = toNum(mRaw);
-      const p = toNum(pRaw);
+      const m = toNum(pick(r, mvrvKeys));
+      const p = toNum(pick(r, priceKeys));
 
       if (!d || m === null) continue;
 
@@ -117,14 +112,16 @@ async function loadChart(){
         tickfont: { color: "#111111" },
         titlefont: { color: "#111111" }
       },
+
       yaxis: {
         title: "MVRV (Price / Realized Price)",
         showgrid: true,
         gridcolor: "#eeeeee",
         tickfont: { color: "#111111" },
         titlefont: { color: "#111111" },
-        range: [0, 10] // ensures the 6 to 8 band is visible
+        range: [0, 10]
       },
+
       yaxis2: {
         title: "BTC Price (USD)",
         overlaying: "y",
@@ -136,8 +133,8 @@ async function loadChart(){
         tickfont: { color: "#111111" },
         titlefont: { color: "#111111" }
       },
+
       shapes: [
-        // Green zone: 0.5 to 1.0
         {
           type: "rect",
           xref: "paper",
@@ -148,7 +145,6 @@ async function loadChart(){
           line: { width: 0 },
           layer: "below"
         },
-        // Red zone: 6.0 to 8.0
         {
           type: "rect",
           xref: "paper",
@@ -160,10 +156,47 @@ async function loadChart(){
           layer: "below"
         }
       ],
+
+      /* 🔹 CENTER WATERMARK */
+      images: [
+        {
+          source: "assets/tbl-logo.png",
+          xref: "paper",
+          yref: "paper",
+          x: 0.5,
+          y: 0.5,
+          sizex: 0.6,
+          sizey: 0.6,
+          xanchor: "center",
+          yanchor: "middle",
+          opacity: 0.06,
+          layer: "below"
+        }
+      ],
+
+      /* 🔹 BRAND LABEL */
+      annotations: [
+        {
+          xref: "paper",
+          yref: "paper",
+          x: 0.02,
+          y: 0.98,
+          xanchor: "left",
+          yanchor: "top",
+          text: "Charts by: @TheBitcoinLayer",
+          showarrow: false,
+          font: { size: 14, color: "#111" },
+          bgcolor: "rgba(255,255,255,0.7)",
+          bordercolor: "rgba(0,0,0,0.15)",
+          borderwidth: 1,
+          borderpad: 6
+        }
+      ],
+
       plot_bgcolor: "#ffffff",
       paper_bgcolor: "#ffffff",
-      margin: { l: 80, r: 90, t: 20, b: 60 },
-      legend: { orientation: "h", x: 0.02, y: 1.02 }
+      margin: { l: 80, r: 90, t: 30, b: 60 },
+      legend: { orientation: "h", x: 0.02, y: 1.05 }
     };
 
     Plotly.newPlot("chart", traces, layout, {
