@@ -1,111 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bitcoin MVRV (Price / Realized Price)</title>
+const layout = {
+  xaxis: {
+    title: "Date",
+    type: "date",
+    showgrid: false,
+    tickfont: { color: "#111111" },
+    titlefont: { color: "#111111" }
+  },
+  yaxis: {
+    title: "MVRV (Price / Realized Price)",
+    showgrid: true,
+    gridcolor: "#e6e6e6",
+    tickfont: { color: "#111111" },
+    titlefont: { color: "#111111" }
+  },
+  yaxis2: {
+    title: "BTC Price (USD)",
+    overlaying: "y",
+    side: "right",
+    type: "log",
+    tickprefix: "$",
+    tickformat: ",",
+    showgrid: false,
+    tickfont: { color: "#111111" },
+    titlefont: { color: "#111111" }
+  },
 
-  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      background-color: #ffffff;
-      color: #111;
+  shapes: [
+    {
+      type: "rect",
+      xref: "paper",
+      x0: 0,
+      x1: 1,
+      yref: "y",
+      y0: 0.5,
+      y1: 1.0,
+      fillcolor: "rgba(46, 160, 67, 0.10)",
+      line: { width: 0 }
+    },
+    {
+      type: "rect",
+      xref: "paper",
+      x0: 0,
+      x1: 1,
+      yref: "y",
+      y0: 6.0,
+      y1: 8.0,
+      fillcolor: "rgba(207, 34, 46, 0.10)",
+      line: { width: 0 }
     }
-    #chart {
-      width: 100vw;
-      height: 100vh;
-    }
-  </style>
-</head>
-<body>
+  ],
 
-<div id="chart"></div>
-
-<script>
-async function loadChart() {
-  try {
-    const response = await fetch("data/mvrv.json", { cache: "no-store" });
-    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
-
-    const data = await response.json();
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new Error("No valid data loaded");
-    }
-
-    const dates = data.map(d => d.date);
-    const mvrv = data.map(d => d.mvrv);
-    const price = data.map(d => d.price);
-
-    const mvrvTrace = {
-      x: dates,
-      y: mvrv,
-      type: "scatter",
-      mode: "lines",
-      name: "MVRV",
-      line: { width: 2 },
-      hovertemplate: "MVRV: %{y:.2f}<br>%{x}<extra></extra>"
-    };
-
-    const priceTrace = {
-      x: dates,
-      y: price,
-      type: "scatter",
-      mode: "lines",
-      name: "BTC Price (USD)",
-      yaxis: "y2",
-      line: { color: "#000000", width: 2 },  // black
-      hovertemplate: "BTC: $%{y:,.0f}<br>%{x}<extra></extra>"
-    };
-
-    const layout = {
-      xaxis: {
-        title: "Date",
-        type: "date",
-        showgrid: false,
-        tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" }
-      },
-      yaxis: {
-        title: "MVRV (Price / Realized Price)",
-        showgrid: true,
-        gridcolor: "#e6e6e6",
-        tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" }
-      },
-      yaxis2: {
-        title: "BTC Price (USD)",
-        overlaying: "y",
-        side: "right",
-        type: "log",
-        tickprefix: "$",
-        tickformat: ",",
-        showgrid: false,
-        tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" }
-      },
-      plot_bgcolor: "#ffffff",
-      paper_bgcolor: "#ffffff",
-      margin: { l: 80, r: 90, t: 20, b: 60 },
-      legend: { orientation: "h", x: 0.02, y: 1.02 }
-    };
-
-    Plotly.newPlot("chart", [mvrvTrace, priceTrace], layout, {
-      responsive: true,
-      displaylogo: false
-    });
-
-  } catch (err) {
-    document.getElementById("chart").innerHTML =
-      "<p style='color:red;padding:20px;'>Error loading chart data</p>";
-    console.error(err);
-  }
-}
-
-loadChart();
-</script>
-
-</body>
-</html>
+  plot_bgcolor: "#ffffff",
+  paper_bgcolor: "#ffffff",
+  margin: { l: 80, r: 90, t: 20, b: 60 },
+  legend: { orientation: "h", x: 0.02, y: 1.02 }
+};
