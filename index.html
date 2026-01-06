@@ -104,13 +104,19 @@ async function loadChart(){
       });
     }
 
+    // Trailing 3 years
+    const lastDate = new Date(dates[dates.length - 1]);
+    const startDate = new Date(lastDate);
+    startDate.setFullYear(startDate.getFullYear() - 3);
+
     const layout = {
       xaxis: {
         title: "Date",
         type: "date",
         showgrid: false,
         tickfont: { color: "#111111" },
-        titlefont: { color: "#111111" }
+        titlefont: { color: "#111111" },
+        range: [startDate.toISOString().slice(0,10), lastDate.toISOString().slice(0,10)]
       },
 
       yaxis: {
