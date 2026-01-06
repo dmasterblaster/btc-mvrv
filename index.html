@@ -40,7 +40,7 @@ function pick(obj, keys){
 async function loadChart(){
   try{
     const res = await fetch("data/mvrv.json", { cache: "no-store" });
-    if (!res.ok) throw new Error(Fetch failed: ${res.status});
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
 
     const rows = await res.json();
     if (!Array.isArray(rows) || rows.length === 0)
@@ -66,4 +66,155 @@ async function loadChart(){
       if (!d || m === null) continue;
 
       dates.push(String(d));
-      mvrv
+      mvrv.push(m);
+      price.push(p);
+      if (p !== null) priceCount++;
+    }
+
+    if (dates.length === 0){
+      throw new Error(
+        "No valid datapoints after parsing.\n" +
+        "First row keys: " + keys.join(", ")
+      );
+    }
+
+    const traces = [
+      {
+        x: dates,
+        y: mvrv,
+        type: "scatter",
+        mode: "lines",
+        name: "MVRV",
+        line: { width: 2.5, color: "#f39c12" },
+        hovertemplate: "MVRV: %{y:.2f}<br>%{x}<extra></extra>"
+      }
+    ];
+
+    if (priceCount > 0){
+      traces.push({
+        x: dates,
+        y: price,
+        type: "scatter",
+        mode: "lines",
+        name: "BTC Price (USD)",
+        yaxis: "y2",
+        line: { width: 2, color: "#111111" },
+        connectgaps: true,
+        hovertemplate: "Price: $%{y:,.0f}<br>%{x}<extra></extra>"
+      });
+    }
+
+    const layout = {
+      xaxis: {
+        title: "Date",
+        type: "date",
+        showgrid: false,
+        tickfont: { color: "#111111" },
+        titlefont: { color: "#111111" }
+      },
+
+      yaxis: {
+        title: "MVRV (Price / Realized Price)",
+        showgrid: true,
+        gridcolor: "#eeeeee",
+        tickfont: { color: "#111111" },
+        titlefont: { color: "#111111" },
+        range: [0, 10]
+      },
+
+      yaxis2: {
+        title: "BTC Price (USD)",
+        overlaying: "y",
+        side: "right",
+        type: "log",
+        tickprefix: "$",
+        tickformat: ",",
+        showgrid: false,
+        tickfont: { color: "#111111" },
+        titlefont: { color: "#111111" }
+      },
+
+      shapes: [
+        {
+          type: "rect",
+          xref: "paper",
+          x0: 0,
+          x1: 1,
+          yref: "y",
+          y0: 0.5,
+          y1: 1.0,
+          fillcolor: "rgba(46, 204, 113, 0.12)",
+          line: { width: 0 },
+          layer: "below"
+        },
+        {
+          type: "rect",
+          xref: "paper",
+          x0: 0,
+          x1: 1,
+          yref: "y",
+          y0: 4.0,
+          y1: 6.0,
+          fillcolor: "rgba(231, 76, 60, 0.12)",
+          line: { width: 0 },
+          layer: "below"
+        }
+      ],
+
+      images: [
+        {
+          source: "assets/tbl-logo.png",
+          xref: "paper",
+          yref: "paper",
+          x: 0.5,
+          y: 0.5,
+          sizex: 0.6,
+          sizey: 0.6,
+          xanchor: "center",
+          yanchor: "middle",
+          opacity: 0.06,
+          layer: "below"
+        }
+      ],
+
+      annotations: [
+        {
+          xref: "paper",
+          yref: "paper",
+          x: 0.04,
+          y: 0.94,
+          xanchor: "left",
+          yanchor: "top",
+          text: "Charts by: @TheBitcoinLayer",
+          showarrow: false,
+          font: { size: 14, color: "#111" },
+          bgcolor: "rgba(255,255,255,0.7)",
+          bordercolor: "rgba(0,0,0,0.15)",
+          borderwidth: 1,
+          borderpad: 6
+        }
+      ],
+
+      plot_bgcolor: "#ffffff",
+      paper_bgcolor: "#ffffff",
+      margin: { l: 80, r: 90, t: 30, b: 60 },
+      legend: { orientation: "h", x: 0.02, y: 1.05 }
+    };
+
+    Plotly.newPlot("chart", traces, layout, {
+      responsive: true,
+      displaylogo: false
+    });
+
+  } catch (err){
+    console.error(err);
+    document.getElementById("chart").innerHTML =
+      "<p style='color:#cf222e;padding:20px;'>Error loading chart data. Open DevTools Console for details.</p>";
+  }
+}
+
+loadChart();
+</script>
+
+</body>
+</html>
