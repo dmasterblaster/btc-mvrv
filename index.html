@@ -18,32 +18,10 @@
       width:100vw;
       height:100vh;
     }
-
-    /* Toggle button – RIGHT MIDDLE */
-    #scaleToggle{
-      position:fixed;
-      right:12px;
-      top:50%;
-      transform:translateY(-50%);
-      z-index:10;
-      padding:8px 12px;
-      font-size:13px;
-      font-weight:600;
-      background:#ffffff;
-      color:#111;
-      border:1px solid rgba(0,0,0,0.2);
-      border-radius:6px;
-      cursor:pointer;
-      box-shadow:0 1px 3px rgba(0,0,0,0.08);
-    }
-    #scaleToggle:hover{
-      background:#f6f6f6;
-    }
   </style>
 </head>
 <body>
 
-<button id="scaleToggle">Log scale</button>
 <div id="chart"></div>
 
 <script>
@@ -59,15 +37,17 @@ function pick(obj, keys){
   return undefined;
 }
 
-let isLogScale = false;
-
 async function loadChart(){
   try{
     const res = await fetch("data/mvrv.json", { cache: "no-store" });
-    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    if (!res.ok) throw new Error(Fetch failed: ${res.status});
 
     const rows = await res.json();
-    if (!Array.isArray(rows) || rows.length === 0) throw new Error("JSON is empty or not an array.");
+    if (!Array.isArray(rows) || rows.length === 0)
+      throw new Error("JSON is empty or not an array.");
+
+    const sample = rows[0] || {};
+    const keys = Object.keys(sample);
 
     const dateKeys  = ["date", "Date"];
     const mvrvKeys  = ["mvrv", "MVRV", "value"];
@@ -86,92 +66,4 @@ async function loadChart(){
       if (!d || m === null) continue;
 
       dates.push(String(d));
-      mvrv.push(m);
-      price.push(p);
-      if (p !== null) priceCount++;
-    }
-
-    const traces = [
-      {
-        x: dates,
-        y: mvrv,
-        type: "scatter",
-        mode: "lines",
-        name: "MVRV",
-        line: { width: 2.5, color: "#f39c12" },
-        hovertemplate: "MVRV: %{y:.2f}<br>%{x}<extra></extra>"
-      }
-    ];
-
-    if (priceCount > 0){
-      traces.push({
-        x: dates,
-        y: price,
-        type: "scatter",
-        mode: "lines",
-        name: "BTC Price (USD)",
-        yaxis: "y2",
-        line: { width: 2, color: "#111111" },
-        connectgaps: true,
-        hovertemplate: "Price: $%{y:,.0f}<br>%{x}<extra></extra>"
-      });
-    }
-
-    const lastDate = new Date(dates[dates.length - 1]);
-    const startDate = new Date(lastDate);
-    startDate.setFullYear(startDate.getFullYear() - 3);
-
-    const layout = {
-      xaxis: {
-        title: "Date",
-        type: "date",
-        range: [
-          startDate.toISOString().slice(0,10),
-          lastDate.toISOString().slice(0,10)
-        ],
-        showgrid: false
-      },
-      yaxis: {
-        title: "MVRV (Price / Realized Price)",
-        range: [0, 10],
-        gridcolor: "#eeeeee"
-      },
-      yaxis2: {
-        title: "BTC Price (USD)",
-        overlaying: "y",
-        side: "right",
-        tickprefix: "$",
-        tickformat: ","
-      },
-      plot_bgcolor: "#ffffff",
-      paper_bgcolor: "#ffffff",
-      margin: { l: 80, r: 90, t: 30, b: 60 }
-    };
-
-    Plotly.newPlot("chart", traces, layout, {
-      responsive: true,
-      displaylogo: false
-    });
-
-    document.getElementById("scaleToggle").onclick = () => {
-      isLogScale = !isLogScale;
-
-      Plotly.relayout("chart", {
-        "yaxis2.type": isLogScale ? "log" : "linear"
-      });
-
-      document.getElementById("scaleToggle").innerText =
-        isLogScale ? "Linear scale" : "Log scale";
-    };
-
-  } catch (err){
-    console.error(err);
-    document.getElementById("chart").innerHTML =
-      "<p style='color:#cf222e;padding:20px;'>Error loading chart data.</p>";
-  }
-}
-
-loadChart();
-</script>
-</body>
-</html>
+      mvrv
