@@ -1,57 +1,184 @@
-const layout = {
-  xaxis: {
-    title: "Date",
-    type: "date",
-    showgrid: false,
-    tickfont: { color: "#111111" },
-    titlefont: { color: "#111111" }
-  },
-  yaxis: {
-    title: "MVRV (Price / Realized Price)",
-    showgrid: true,
-    gridcolor: "#e6e6e6",
-    tickfont: { color: "#111111" },
-    titlefont: { color: "#111111" }
-  },
-  yaxis2: {
-    title: "BTC Price (USD)",
-    overlaying: "y",
-    side: "right",
-    type: "log",
-    tickprefix: "$",
-    tickformat: ",",
-    showgrid: false,
-    tickfont: { color: "#111111" },
-    titlefont: { color: "#111111" }
-  },
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BTC MVRV</title>
 
-  shapes: [
-    {
-      type: "rect",
-      xref: "paper",
-      x0: 0,
-      x1: 1,
-      yref: "y",
-      y0: 0.5,
-      y1: 1.0,
-      fillcolor: "rgba(46, 160, 67, 0.10)",
-      line: { width: 0 }
-    },
-    {
-      type: "rect",
-      xref: "paper",
-      x0: 0,
-      x1: 1,
-      yref: "y",
-      y0: 6.0,
-      y1: 8.0,
-      fillcolor: "rgba(207, 34, 46, 0.10)",
-      line: { width: 0 }
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+
+  <style>
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      background:#ffffff;
+      color:#111;
     }
-  ],
+    #chart{
+      width:100vw;
+      height:100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="chart"></div>
 
-  plot_bgcolor: "#ffffff",
-  paper_bgcolor: "#ffffff",
-  margin: { l: 80, r: 90, t: 20, b: 60 },
-  legend: { orientation: "h", x: 0.02, y: 1.02 }
-};
+<script>
+function toNum(x){
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+}
+
+function pick(obj, keys){
+  for (const k of keys){
+    if (obj && Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
+  }
+  return undefined;
+}
+
+async function loadChart(){
+  try{
+    const res = await fetch("data/mvrv.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error("JSON is empty or not an array.");
+
+    const sample = rows[0] || {};
+    const keys = Object.keys(sample);
+
+    // Expecting something like:
+    // [{ "date": "YYYY-MM-DD", "mvrv": 1.23, "price": 42000 }, ...]
+    const dateKeys = ["date", "Date"];
+    const mvrvKeys = ["mvrv", "MVRV", "value"];
+    const priceKeys = ["price", "Price", "btc_price", "btcPrice", "price_usd", "usd_price"];
+
+    const dates = [];
+    const mvrv = [];
+    const price = [];
+
+    let priceCount = 0;
+
+    for (const r of rows){
+      const d = pick(r, dateKeys);
+      const mRaw = pick(r, mvrvKeys);
+      const pRaw = pick(r, priceKeys);
+
+      const m = toNum(mRaw);
+      const p = toNum(pRaw);
+
+      if (!d || m === null) continue;
+
+      dates.push(String(d));
+      mvrv.push(m);
+      price.push(p);
+
+      if (p !== null) priceCount++;
+    }
+
+    if (dates.length === 0){
+      throw new Error(
+        "No valid datapoints after parsing.\n" +
+        "First row keys: " + keys.join(", ")
+      );
+    }
+
+    const traces = [
+      {
+        x: dates,
+        y: mvrv,
+        type: "scatter",
+        mode: "lines",
+        name: "MVRV",
+        line: { width: 2.5, color: "#f39c12" },
+        hovertemplate: "MVRV: %{y:.2f}<br>%{x}<extra></extra>"
+      }
+    ];
+
+    if (priceCount > 0){
+      traces.push({
+        x: dates,
+        y: price,
+        type: "scatter",
+        mode: "lines",
+        name: "BTC Price (USD)",
+        yaxis: "y2",
+        line: { width: 2, color: "#111111" },
+        connectgaps: true,
+        hovertemplate: "Price: $%{y:,.0f}<br>%{x}<extra></extra>"
+      });
+    }
+
+    const layout = {
+      xaxis: {
+        title: "Date",
+        type: "date",
+        showgrid: false,
+        tickfont: { color: "#111111" },
+        titlefont: { color: "#111111" }
+      },
+      yaxis: {
+        title: "MVRV (Price / Realized Price)",
+        showgrid: true,
+        gridcolor: "#eeeeee",
+        tickfont: { color: "#111111" },
+        titlefont: { color: "#111111" },
+        range: [0, 10] // ensures the 6 to 8 band is visible
+      },
+      yaxis2: {
+        title: "BTC Price (USD)",
+        overlaying: "y",
+        side: "right",
+        type: "log",
+        tickprefix: "$",
+        tickformat: ",",
+        showgrid: false,
+        tickfont: { color: "#111111" },
+        titlefont: { color: "#111111" }
+      },
+      shapes: [
+        // Green zone: 0.5 to 1.0
+        {
+          type: "rect",
+          xref: "paper",
+          x0: 0, x1: 1,
+          yref: "y",
+          y0: 0.5, y1: 1.0,
+          fillcolor: "rgba(46, 204, 113, 0.12)",
+          line: { width: 0 },
+          layer: "below"
+        },
+        // Red zone: 6.0 to 8.0
+        {
+          type: "rect",
+          xref: "paper",
+          x0: 0, x1: 1,
+          yref: "y",
+          y0: 6.0, y1: 8.0,
+          fillcolor: "rgba(231, 76, 60, 0.12)",
+          line: { width: 0 },
+          layer: "below"
+        }
+      ],
+      plot_bgcolor: "#ffffff",
+      paper_bgcolor: "#ffffff",
+      margin: { l: 80, r: 90, t: 20, b: 60 },
+      legend: { orientation: "h", x: 0.02, y: 1.02 }
+    };
+
+    Plotly.newPlot("chart", traces, layout, {
+      responsive: true,
+      displaylogo: false
+    });
+
+  } catch (err){
+    console.error(err);
+    document.getElementById("chart").innerHTML =
+      "<p style='color:#cf222e;padding:20px;'>Error loading chart data. Open DevTools Console for details.</p>";
+  }
+}
+
+loadChart();
+</script>
+</body>
+</html>
